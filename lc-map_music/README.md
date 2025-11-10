@@ -18,27 +18,37 @@ lc-map_music/
   requirements.txt              # 依赖列表
   .env.example                  # 环境变量示例
   mcp-config.json              # Chrome DevTools MCP 配置
-  setup.ps1                     # PowerShell 初始化脚本
-  run.bat                       # Windows 快速启动脚本
   run_app.py                    # Python 启动脚本
   README.md                     # 本文件
-  CDP_INTEGRATION.md            # MCP 集成详细指南
   app/
     backend/
-      config.py
-      llm.py
+      config.py                 # 配置管理
+      llm.py                    # LLM 调用封装
+      logging_config.py         # 日志配置
       tools/
-        amap_poi_search.py
-        amap_route_planner.py
-        qq_music_cdp.py          # 基于 Chrome DevTools MCP 的工具
+        amap_poi_search.py      # 高德 POI 搜索工具
+        amap_route_planner.py   # 高德路线规划工具
+        qq_music_search.py      # QQ 音乐搜索工具
+        qq_music_play.py        # QQ 音乐播放工具
+        qq_music_cdp.py         # 基于 Chrome DevTools MCP 的工具
       agents/
-        map_agent.py
-        music_agent.py
+        map_agent.py            # 地图 Agent
+        music_agent.py          # 音乐 Agent
     frontend/
       app.py                    # Streamlit 前端入口
+  doc/
+    CDP_INTEGRATION.md          # MCP 集成详细指南
   tests/
-    test_llm_connection.py
-    test_map_tools.py
+    test_llm_connection.py      # LLM 连接测试
+    test_map_tools.py           # 地图工具测试
+    test_pychrome.py            # Chrome 自动化测试
+  script/
+    inspect_netease.py          # 网易云音乐检查脚本
+    inspect_netease2.py         # 网易云音乐检查脚本 v2
+    inspect_netease3.py         # 网易云音乐检查脚本 v3
+    inspect_qq.py               # QQ 音乐检查脚本
+  skills/
+    (Agent 扩展技能)
 ```
 
 ## 环境准备
@@ -50,39 +60,27 @@ lc-map_music/
 3. **高德 API Key**: 用于地图功能
 4. **Node.js v20+** (可选，仅用于 Chrome DevTools MCP)
 
-### 快速启动（推荐）
+### 快速启动
 
 ```powershell
-# 1. 创建虚拟环境并安装依赖
-.\setup.ps1
-
-# 2. 复制环境变量文件
-Copy-Item .env.example .env
-
-# 3. 编辑 .env，填入你的高德 API Key
-# 编辑器中打开 .env 文件，找到 AMAP_API_KEY 并设置值
-
-# 4. 在另一个终端启动 Ollama（保持运行）
-ollama run deepseek-v3.1:671b-cloud
-
-# 5. 启动 Streamlit 应用
-cd .\lc-map_music
-streamlit run app/frontend/app.py
-```
-
-### 手动启动（备选）
-
-```powershell
-# 创建虚拟环境
+# 1. 创建虚拟环境
 python -m venv .venv
 .\.venv\Scripts\activate
 
-# 安装依赖
+# 2. 安装依赖
 pip install -r requirements.txt
 
-# 启动应用
-cd .\lc-map_music
-streamlit run app/frontend/app.py
+# 3. 复制环境变量文件
+Copy-Item .env.example .env
+
+# 4. 编辑 .env，填入你的高德 API Key
+# 编辑器中打开 .env 文件，找到 AMAP_API_KEY 并设置值
+
+# 5. 在另一个终端启动 Ollama（保持运行）
+ollama run deepseek-v3.1:671b-cloud
+
+# 6. 启动应用
+python run_app.py
 ```
 
 ## 环境变量配置
@@ -91,7 +89,7 @@ streamlit run app/frontend/app.py
 
 | 变量 | 说明 | 必需 | 示例 |
 |------|------|------|------|
-| `AMAP_API_KEY` | 高德 Web 服务 Key | ✓ | `f18d97105d9f7093b6a053cd9db38c2b` |
+| `AMAP_API_KEY` | 高德 Web 服务 Key | ✓ | `<your_amap_api_key>` |
 | `OLLAMA_BASE_URL` | Ollama 服务地址 | ✗ | `http://localhost:11434` |
 | `LLM_MODEL` | 使用的模型 | ✗ | `ollama/deepseek-v3.1:671b-cloud` |
 
@@ -124,10 +122,10 @@ streamlit run app/frontend/app.py
 如果想通过 Claude Desktop、Cursor 等 AI 工具控制应用：
 
 1. 安装 Node.js: https://nodejs.org/ (v20 或更新)
-2. 参考 `CDP_INTEGRATION.md` 完成 MCP 配置
+2. 参考 `doc/CDP_INTEGRATION.md` 完成 MCP 配置
 3. 在 AI 工具配置中加入 Chrome DevTools MCP
 
-详见 `CDP_INTEGRATION.md`。
+详见 `doc/CDP_INTEGRATION.md`。
 
 ## Agent 介绍
 
@@ -167,12 +165,11 @@ streamlit run app/frontend/app.py
 
 | 问题 | 原因 | 解决方案 |
 |------|------|---------|
-| `streamlit: 无法识别` | 虚拟环境未激活或依赖未安装 | 运行 `./setup.ps1` 重新初始化 |
-| PowerShell 脚本无权限执行 | ExecutionPolicy 限制 | 执行 `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` |
-| "No module named 'app'" | Python 路径问题 | 确保从 `lc-map_music` 目录运行，或使用 `run_app.py` |
+| `streamlit: 无法识别` | 虚拟环境未激活或依赖未安装 | 激活虚拟环境并运行 `pip install -r requirements.txt` |
+| "No module named 'app'" | Python 路径问题 | 使用 `python run_app.py` 启动应用 |
 | 高德 API 返回 `INVALID_USER_KEY` | Key 不正确或未启用 | 检查高德平台的 Key 和应用状态 |
 | Ollama 连接失败 | 服务未运行或端口错误 | 确认 Ollama 已启动：`ollama list` |
-| QQ 音乐搜索无结果 | 页面选择器过期 | 打开非 headless 模式调试，或参考 CDP_INTEGRATION.md |
+| QQ 音乐搜索无结果 | 页面选择器过期 | 参考 `doc/CDP_INTEGRATION.md` 调试 |
 
 ## 后续增强计划
 
@@ -196,7 +193,7 @@ streamlit run app/frontend/app.py
 
 ## 相关文档
 
-- 📖 [Chrome DevTools MCP 集成指南](./CDP_INTEGRATION.md)
+- 📖 [Chrome DevTools MCP 集成指南](./doc/CDP_INTEGRATION.md)
 - 📋 [原始项目需求](./requirement.md)
 - 🔧 [高德 API 文档](https://lbs.amap.com/api)
 - 🌐 [LangChain 文档](https://python.langchain.com/)
