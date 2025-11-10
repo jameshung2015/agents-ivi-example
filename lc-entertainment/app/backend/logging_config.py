@@ -5,15 +5,26 @@
 import logging
 import sys
 from pathlib import Path
+from datetime import datetime
 
-def setup_logging(log_level=logging.INFO, log_file=None):
+def setup_logging(log_level=logging.INFO, log_file=None, log_dir=None):
     """
     设置应用程序日志
     
     Args:
         log_level: 日志级别（默认 INFO）
         log_file: 日志文件路径（可选）
+        log_dir: 日志目录（可选，默认使用环境变量或固定路径）
     """
+    # 如果没有指定log_file，自动生成带日期时间的文件名
+    if log_file is None:
+        if log_dir is None:
+            log_dir = os.getenv("LOG_DIR", r"D:\project\app\agents-ivi-example\lc-entertainment\logs")
+        log_dir_path = Path(log_dir)
+        log_dir_path.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        log_file = log_dir_path / f"app_{timestamp}.log"
+    
     # 创建根logger
     root_logger = logging.getLogger()
     root_logger.setLevel(log_level)
@@ -33,7 +44,7 @@ def setup_logging(log_level=logging.INFO, log_file=None):
     console_handler.setFormatter(formatter)
     root_logger.addHandler(console_handler)
     
-    # 文件handler（如果指定）
+    # 文件handler
     if log_file:
         log_path = Path(log_file)
         log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -48,12 +59,13 @@ def setup_logging(log_level=logging.INFO, log_file=None):
     logging.getLogger('httpx').setLevel(logging.WARNING)
     logging.getLogger('httpcore').setLevel(logging.WARNING)
     
-    logging.info("日志系统初始化完成")
+    logging.info(f"日志系统初始化完成，日志文件: {log_file}")
 
 # 默认初始化（可通过环境变量控制）
 import os
 log_level_str = os.getenv("LOG_LEVEL", "INFO")
 log_level = getattr(logging, log_level_str.upper(), logging.INFO)
 log_file = os.getenv("LOG_FILE")
+log_dir = os.getenv("LOG_DIR")
 
-setup_logging(log_level=log_level, log_file=log_file)
+setup_logging(log_level=log_level, log_file=log_file, log_dir=log_dir)
